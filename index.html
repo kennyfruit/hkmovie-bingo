@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Game</title>
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-gap: 5px;
+            max-width: 400px;
+            margin: auto;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #000;
+            text-align: center;
+            line-height: 50px;
+            cursor: pointer;
+        }
+        .cell.active {
+            border-color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bingo Game</h1>
+    <div class="grid" id="bingoGrid"></div>
+    <button onclick="submitAnswers()">Submit</button>
+    <script>
+        const grid = document.getElementById('bingoGrid');
+        const selected = [];
+        let gridData = {};  // 保存每個格子的選擇數據
+
+        // 加載格子數據
+        function loadGridData() {
+            fetch('/grid-data')
+                .then(response => response.json())
+                .then(data => {
+                    gridData = data;
+                    renderGrid();
+                });
+        }
+
+        // 根據數據渲染網格
+        function renderGrid() {
+            grid.innerHTML = '';  // 清空舊網格
+            for (let i = 1; i <= 49; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.textContent = i;
+                cell.style.backgroundColor = `rgba(0, 0, 255, ${Math.min(gridData[i] / 10, 1)})`; // 設置背景顏色深淺
+                cell.onclick = () => {
+                    cell.classList.toggle('active');
+                    if (selected.includes(i)) {
+                        selected.splice(selected.indexOf(i), 1);
+                    } else {
+                        selected.push(i);
+                    }
+                };
+                grid.appendChild(cell);
+            }
+        }
+
+        // 提交答案
+        function submitAnswers() {
+            fetch('/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user: 'User1',
+                    answers: selected.join(','),
+                }),
+            })
+            .then(response => response.json())
+            .then(() => {
+                alert('Answers submitted!');
+                loadGridData();  // 重新加載數據
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // 初始加載
+        loadGridData();
+    </script>
+</body>
+</html>
